@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).parent
 
 
 # ============================================================
-# LOAD MODELS
+# LOAD MODELS AND PROJECT FILES
 # ============================================================
 
 @st.cache_resource
@@ -82,6 +82,7 @@ page = st.sidebar.radio(
     "Navigation",
     [
         "🏠 Home",
+        "📊 Analytics",
         "📈 Rating Prediction",
         "🔍 Visit Mode Prediction",
         "⭐ Recommendations"
@@ -101,7 +102,8 @@ if page == "🏠 Home":
         """
         A Machine Learning project for analyzing tourism
         experiences, predicting ratings and visit modes,
-        and recommending similar attractions.
+        recommending similar attractions, and exploring
+        tourism trends through analytics.
         """
     )
 
@@ -109,7 +111,7 @@ if page == "🏠 Home":
 
     st.subheader("Project Features")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
 
@@ -136,6 +138,15 @@ if page == "🏠 Home":
         st.write(
             "Find similar attractions using "
             "TF-IDF and Cosine Similarity."
+        )
+
+    with col4:
+
+        st.info("📊 Analytics")
+
+        st.write(
+            "Explore attractions, regions, "
+            "types, and rating trends."
         )
 
     st.divider()
@@ -165,6 +176,294 @@ if page == "🏠 Home":
             "0.8747"
         )
 
+    st.divider()
+
+    st.subheader("Dataset Overview")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        st.metric(
+            "Unique Attractions",
+            len(recommendation_df)
+        )
+
+    with col2:
+
+        if "Country" in recommendation_df.columns:
+
+            st.metric(
+                "Countries",
+                recommendation_df["Country"].nunique()
+            )
+
+        else:
+
+            st.metric(
+                "Countries",
+                "N/A"
+            )
+
+    with col3:
+
+        if "Region" in recommendation_df.columns:
+
+            st.metric(
+                "Regions",
+                recommendation_df["Region"].nunique()
+            )
+
+        else:
+
+            st.metric(
+                "Regions",
+                "N/A"
+            )
+
+
+# ============================================================
+# ANALYTICS PAGE
+# ============================================================
+
+elif page == "📊 Analytics":
+
+    st.title("📊 Tourism Analytics & Visualizations")
+
+    st.write(
+        """
+        Explore tourism patterns using attraction,
+        region, attraction type, and rating information.
+        """
+    )
+
+    st.divider()
+
+
+    # --------------------------------------------------------
+    # TOP ATTRACTIONS BY AVERAGE RATING
+    # --------------------------------------------------------
+
+    st.subheader("🏆 Top 10 Attractions by Average Rating")
+
+    if (
+        "Attraction" in recommendation_df.columns
+        and "AverageRating" in recommendation_df.columns
+    ):
+
+        top_attractions = (
+            recommendation_df[
+                ["Attraction", "AverageRating"]
+            ]
+            .dropna()
+            .sort_values(
+                by="AverageRating",
+                ascending=False
+            )
+            .head(10)
+        )
+
+        st.bar_chart(
+            top_attractions.set_index(
+                "Attraction"
+            )
+        )
+
+        st.dataframe(
+            top_attractions,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning(
+            "Attraction or AverageRating data "
+            "is not available."
+        )
+
+
+    st.divider()
+
+
+    # --------------------------------------------------------
+    # TOP REGIONS
+    # --------------------------------------------------------
+
+    st.subheader("🌍 Top Regions by Number of Attractions")
+
+    if "Region" in recommendation_df.columns:
+
+        region_counts = (
+            recommendation_df["Region"]
+            .dropna()
+            .value_counts()
+            .head(10)
+        )
+
+        st.bar_chart(region_counts)
+
+        region_df = (
+            region_counts
+            .reset_index()
+        )
+
+        region_df.columns = [
+            "Region",
+            "Number of Attractions"
+        ]
+
+        st.dataframe(
+            region_df,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning(
+            "Region data is not available."
+        )
+
+
+    st.divider()
+
+
+    # --------------------------------------------------------
+    # ATTRACTION TYPE DISTRIBUTION
+    # --------------------------------------------------------
+
+    st.subheader("🏛️ Attraction Type Distribution")
+
+    if "AttractionTypeClean" in recommendation_df.columns:
+
+        type_counts = (
+            recommendation_df[
+                "AttractionTypeClean"
+            ]
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .head(10)
+        )
+
+        st.bar_chart(type_counts)
+
+        type_df = (
+            type_counts
+            .reset_index()
+        )
+
+        type_df.columns = [
+            "Attraction Type",
+            "Number of Attractions"
+        ]
+
+        st.dataframe(
+            type_df,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning(
+            "Attraction type data is not available."
+        )
+
+
+    st.divider()
+
+
+    # --------------------------------------------------------
+    # AVERAGE RATING BY REGION
+    # --------------------------------------------------------
+
+    st.subheader("⭐ Average Rating by Region")
+
+    if (
+        "Region" in recommendation_df.columns
+        and "AverageRating" in recommendation_df.columns
+    ):
+
+        region_rating = (
+            recommendation_df
+            .groupby("Region")["AverageRating"]
+            .mean()
+            .sort_values(
+                ascending=False
+            )
+            .head(10)
+        )
+
+        st.bar_chart(region_rating)
+
+        rating_df = (
+            region_rating
+            .reset_index()
+        )
+
+        rating_df.columns = [
+            "Region",
+            "Average Rating"
+        ]
+
+        rating_df["Average Rating"] = (
+            rating_df["Average Rating"]
+            .round(2)
+        )
+
+        st.dataframe(
+            rating_df,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning(
+            "Region or rating data "
+            "is not available."
+        )
+
+
+    st.divider()
+
+
+    # --------------------------------------------------------
+    # COUNTRY DISTRIBUTION
+    # --------------------------------------------------------
+
+    st.subheader("🌎 Top Countries by Number of Attractions")
+
+    if "Country" in recommendation_df.columns:
+
+        country_counts = (
+            recommendation_df["Country"]
+            .dropna()
+            .value_counts()
+            .head(10)
+        )
+
+        st.bar_chart(country_counts)
+
+        country_df = (
+            country_counts
+            .reset_index()
+        )
+
+        country_df.columns = [
+            "Country",
+            "Number of Attractions"
+        ]
+
+        st.dataframe(
+            country_df,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning(
+            "Country data is not available."
+        )
+
 
 # ============================================================
 # RATING PREDICTION PAGE
@@ -182,7 +481,10 @@ elif page == "📈 Rating Prediction":
 
 
     # Get exact features used during training
-    if hasattr(regression_model, "feature_names_in_"):
+    if hasattr(
+        regression_model,
+        "feature_names_in_"
+    ):
 
         regression_features = list(
             regression_model.feature_names_in_
@@ -215,30 +517,38 @@ elif page == "📈 Rating Prediction":
     col1, col2 = st.columns(2)
 
 
-    for i, feature in enumerate(regression_features):
+    for i, feature in enumerate(
+        regression_features
+    ):
 
-        target_column = col1 if i % 2 == 0 else col2
+        target_column = (
+            col1 if i % 2 == 0 else col2
+        )
 
         with target_column:
 
             if feature == "UserId":
 
-                input_values[feature] = st.number_input(
-                    "User ID",
-                    min_value=0,
-                    value=1000,
-                    key=f"reg_{feature}"
+                input_values[feature] = (
+                    st.number_input(
+                        "User ID",
+                        min_value=0,
+                        value=1000,
+                        key=f"reg_{feature}"
+                    )
                 )
 
 
             elif feature == "VisitYear":
 
-                input_values[feature] = st.number_input(
-                    "Visit Year",
-                    min_value=2000,
-                    max_value=2030,
-                    value=2025,
-                    key=f"reg_{feature}"
+                input_values[feature] = (
+                    st.number_input(
+                        "Visit Year",
+                        min_value=2000,
+                        max_value=2030,
+                        value=2025,
+                        key=f"reg_{feature}"
+                    )
                 )
 
 
@@ -247,34 +557,40 @@ elif page == "📈 Rating Prediction":
                 "VisitMonthNum"
             ]:
 
-                input_values[feature] = st.number_input(
-                    feature,
-                    min_value=1,
-                    max_value=12,
-                    value=6,
-                    key=f"reg_{feature}"
+                input_values[feature] = (
+                    st.number_input(
+                        feature,
+                        min_value=1,
+                        max_value=12,
+                        value=6,
+                        key=f"reg_{feature}"
+                    )
                 )
 
 
             elif feature == "Rating":
 
-                input_values[feature] = st.slider(
-                    "Current/Previous Rating",
-                    min_value=1.0,
-                    max_value=5.0,
-                    value=4.0,
-                    step=0.1,
-                    key=f"reg_{feature}"
+                input_values[feature] = (
+                    st.slider(
+                        "Current/Previous Rating",
+                        min_value=1.0,
+                        max_value=5.0,
+                        value=4.0,
+                        step=0.1,
+                        key=f"reg_{feature}"
+                    )
                 )
 
 
             else:
 
-                input_values[feature] = st.number_input(
-                    feature,
-                    min_value=-1,
-                    value=1,
-                    key=f"reg_{feature}"
+                input_values[feature] = (
+                    st.number_input(
+                        feature,
+                        min_value=-1,
+                        value=1,
+                        key=f"reg_{feature}"
+                    )
                 )
 
 
@@ -372,7 +688,6 @@ elif page == "🔍 Visit Mode Prediction":
 
         with target_column:
 
-
             if feature == "UserId":
 
                 cls_input_values[feature] = (
@@ -460,7 +775,6 @@ elif page == "🔍 Visit Mode Prediction":
                     cls_input_df
                 )[0]
             )
-
 
             st.success(
                 f"🔍 Predicted Visit Mode: "
@@ -567,7 +881,6 @@ elif page == "⭐ Recommendations":
 
                 # Remove selected attraction
                 # and zero similarity results
-
                 similarity_scores = [
 
                     (i, score)
@@ -580,7 +893,6 @@ elif page == "⭐ Recommendations":
 
 
                 # Sort by similarity
-
                 similarity_scores = sorted(
 
                     similarity_scores,
